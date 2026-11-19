@@ -1,0 +1,32 @@
+[project]
+name = "fy-attendacne"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+authors = [
+    { name = "Erasmus Chawey Mensah", email = "erasmuschawey12345@gmail.com" }
+]
+requires-python = ">=3.13"
+dependencies = [
+    "celery>=5.7.0",
+    "django>=6.1.3",
+    "django-cors-headers>=4.9.0",
+    "django-environ>=0.14.0",
+    "django-jazzmin>=3.0.5",
+    "gunicorn>=27.0.1",
+    "openpyxl>=3.1.5",
+    "packaging>=26.3",
+    "pillow>=13.0.0",
+    "psycopg[binary]>=3.3.9",
+    "qrcode[pil]>=8.2",
+    "redis>=8.1.0",
+    "requests>=2.34.2",
+    "whitenoise>=6.12.0",
+]
+
+[project.scripts]
+fy-attendacne = "fy_attendacne:main"
+
+[build-system]
+requires = ["uv_build>=0.12.23,<0.13.0"]
+build-backend = "uv_build"

@@ -1,0 +1,372 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Check-In: {{ session.title }} | Church Attendance System{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-100 flex flex-col justify-between py-6 px-4 sm:px-6">
+
+    <div class="max-w-md w-full mx-auto my-auto space-y-6">
+
+        <!-- Top Church Brand -->
+        <div class="text-center">
+            <div class="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-white border border-slate-200 shadow-sm p-1.5 mb-3 overflow-hidden">
+                <img src="{% static 'images/logo.jpg' %}" alt="Church Logo" class="w-full h-full object-contain rounded-xl">
+            </div>
+            <h1 class="text-xl sm:text-2xl font-extrabold text-slate-900 tracking-tight">{{ session.title }}</h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-1 flex items-center justify-center gap-1.5 font-medium">
+                <svg class="w-4 h-4 text-slate-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                </svg>
+                <span>{{ church_location.name }}</span>
+                <span>&bull;</span>
+                <span>{{ session.date|date:"D, M d, Y" }}</span>
+            </p>
+        </div>
+
+        {% if success_record %}
+            <!-- SUCCESS CELEBRATION CARD -->
+            <div class="bg-white rounded-3xl border border-emerald-200 shadow-xl overflow-hidden p-6 sm:p-8 text-center animate-fade-in">
+                <div class="w-16 h-16 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto mb-4 ring-8 ring-emerald-50">
+                    <svg class="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.8" d="M5 13l4 4L19 7"/>
+                    </svg>
+                </div>
+
+                <span class="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 border border-emerald-200 mb-2">
+                    <span class="w-2 h-2 rounded-full bg-emerald-500 animate-pulse"></span>
+                    {% if already_checked_in %}ALREADY RECORDED{% else %}CHECK-IN CONFIRMED{% endif %}
+                </span>
+
+                <h2 class="text-2xl font-black text-slate-900 mt-1">Welcome, {{ success_record.member.name }}!</h2>
+                <p class="text-xs text-slate-500 mt-1">You are checked in as <strong class="text-emerald-700 uppercase">PRESENT</strong></p>
+
+                <!-- Member Summary Card -->
+                <div class="mt-6 bg-slate-50 rounded-2xl p-4 border border-slate-200 text-left space-y-2.5 text-xs sm:text-sm">
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+                        <span class="text-slate-500">Member ID</span>
+                        <span class="font-bold text-slate-900 bg-white px-2 py-0.5 rounded border border-slate-200 font-mono">{{ success_record.member.member_id }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+                        <span class="text-slate-500">Ministry / Dept</span>
+                        <span class="font-semibold text-slate-800">{{ success_record.member.department.name }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1 border-b border-slate-200/60">
+                        <span class="text-slate-500">Check-In Time</span>
+                        <span class="font-semibold text-slate-800">{{ success_record.check_in_time|date:"h:i:s A" }}</span>
+                    </div>
+                    <div class="flex justify-between items-center py-1">
+                        <span class="text-slate-500">Geofence Distance</span>
+                        <span class="font-semibold text-emerald-700">{{ success_record.distance_meters }}m (Inside Sanctuary)</span>
+                    </div>
+                </div>
+
+                <!-- Scripture -->
+                <div class="mt-6 p-4 rounded-xl bg-blue-50/70 border border-blue-100 text-xs text-blue-900/90 italic">
+                    &ldquo;I was glad when they said unto me, Let us go into the house of the LORD.&rdquo;
+                    <div class="font-semibold not-italic text-blue-700 mt-1">Psalm 122:1</div>
+                </div>
+            </div>
+
+        {% else %}
+
+            <!-- MAIN CHECK-IN FORM CARD -->
+            <div class="bg-white rounded-3xl border border-slate-200/90 shadow-lg overflow-hidden p-6 sm:p-8">
+
+                <!-- GEOFENCE LIVE RADAR STATUS (Client-side Geolocation Feedback) -->
+                <div id="gps-status-card" class="mb-6 p-4 rounded-2xl border border-blue-200 bg-blue-50/60 transition-all duration-300">
+                    <div class="flex items-start gap-3">
+                        <div id="gps-icon-container" class="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs">
+                            <!-- Spinning Radar Icon -->
+                            <svg id="gps-spinner" class="animate-spin w-4 h-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <!-- Success Checkmark -->
+                            <svg id="gps-success-icon" class="w-4 h-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                            <!-- Error / Warning Icon -->
+                            <svg id="gps-error-icon" class="w-4 h-4 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        </div>
+
+                        <div class="flex-1">
+                            <h4 id="gps-status-title" class="text-xs font-bold text-blue-900 uppercase tracking-wider">
+                                Checking Church Geofence...
+                            </h4>
+                            <p id="gps-status-desc" class="text-xs text-blue-700/90 mt-0.5 leading-relaxed">
+                                Please allow GPS location access to confirm you are inside the church sanctuary.
+                            </p>
+
+                            <!-- One-Click Admin / Church Building Location Calibration -->
+                            <div id="gps-calibrate-container" class="hidden mt-3 pt-3 border-t border-red-200">
+                                <div class="flex items-center justify-between gap-2 mb-1.5">
+                                    <span class="text-[11px] font-bold text-red-950">At church premises right now?</span>
+                                    <span id="detected-coords-badge" class="text-[10px] font-mono text-red-700 bg-red-100/90 px-1.5 py-0.5 rounded"></span>
+                                </div>
+                                <button 
+                                    type="button" 
+                                    id="btn-calibrate-church" 
+                                    class="w-full py-2 px-3 rounded-xl bg-red-600 hover:bg-red-700 active:scale-98 text-white font-bold text-xs flex items-center justify-center gap-1.5 shadow-sm transition cursor-pointer">
+                                    <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                    </svg>
+                                    <span>Set Church Location to My Current Position</span>
+                                </button>
+                                <p class="text-[10px] text-red-800/80 mt-1 text-center">
+                                    Calibrates the sanctuary geofence (150m radius) to your device's exact GPS coordinates.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- SERVER-SIDE GEOFENCE BLOCK NOTICE (if user manipulated client or shared link) -->
+                {% if geofence_error %}
+                    <div class="mb-6 p-4 rounded-2xl border-2 border-red-300 bg-red-50 text-red-900 text-xs sm:text-sm">
+                        <div class="flex items-start gap-3">
+                            <div class="w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0">
+                                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="font-bold text-red-950 text-sm">Attendance Blocked: Outside Premises</h3>
+                                <p class="mt-1 text-red-800 leading-relaxed">{{ geofence_error.message }}</p>
+                            </div>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- ERROR ALERT (Invalid ID, etc.) -->
+                {% if error_message %}
+                    <div class="mb-5 p-3.5 rounded-xl border border-red-200 bg-red-50 text-red-900 text-xs flex items-center gap-2">
+                        <svg class="w-4 h-4 text-red-600 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span class="font-medium">{{ error_message }}</span>
+                    </div>
+                {% endif %}
+
+                <!-- Form -->
+                <form method="POST" id="checkin-form" class="space-y-4">
+                    {% csrf_token %}
+                    
+                    {{ form.latitude }}
+                    {{ form.longitude }}
+                    {{ form.device_info }}
+
+                    <div>
+                        <label for="{{ form.member_id.id_for_label }}" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2 text-center">
+                            Step 2: Enter Your Member ID
+                        </label>
+                        {{ form.member_id }}
+                        <p class="text-[11px] text-slate-400 text-center mt-1.5">
+                            Format: <span class="font-mono font-semibold text-slate-600">FY-0011</span> (Check the SMS sent to your phone)
+                        </p>
+                    </div>
+
+                    <!-- Submit Button -->
+                    <button 
+                        type="submit" 
+                        id="submit-checkin-btn"
+                        disabled
+                        class="w-full flex items-center justify-center gap-2 py-3.5 px-4 rounded-xl text-white font-bold text-sm sm:text-base brand-blue shadow-md transition duration-150 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed">
+                        <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <span>Check In as Present</span>
+                    </button>
+                </form>
+
+                <!-- Help Notice -->
+                <div class="mt-6 pt-4 border-t border-slate-100 text-center">
+                    <p class="text-xs text-slate-400">
+                        Need assistance? Please contact an usher or church administrator in the auditorium.
+                    </p>
+                </div>
+
+            </div>
+
+        {% endif %}
+
+        <!-- Footer Tagline -->
+        <div class="text-center text-xs text-slate-400 font-medium">
+            Church Attendance System &bull; Geofenced Check-In
+        </div>
+
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const latInput = document.getElementById('id_latitude');
+    const lonInput = document.getElementById('id_longitude');
+    const deviceInput = document.getElementById('id_device_info');
+    const submitBtn = document.getElementById('submit-checkin-btn');
+
+    const statusCard = document.getElementById('gps-status-card');
+    const iconContainer = document.getElementById('gps-icon-container');
+    const spinner = document.getElementById('gps-spinner');
+    const successIcon = document.getElementById('gps-success-icon');
+    const errorIcon = document.getElementById('gps-error-icon');
+    const statusTitle = document.getElementById('gps-status-title');
+    const statusDesc = document.getElementById('gps-status-desc');
+
+    // Church Location and Radius from Django backend
+    const churchLat = {{ church_location.latitude }};
+    const churchLon = {{ church_location.longitude }};
+    const churchRadius = {{ church_location.radius }};
+
+    if (deviceInput) {
+        deviceInput.value = navigator.userAgent;
+    }
+
+    // Haversine formula calculation in JavaScript for instant feedback
+    function calculateDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371000; // meters
+        const phi1 = lat1 * Math.PI / 180;
+        const phi2 = lat2 * Math.PI / 180;
+        const deltaPhi = (lat2 - lat1) * Math.PI / 180;
+        const deltaLambda = (lon2 - lon1) * Math.PI / 180;
+
+        const a = Math.sin(deltaPhi / 2) * Math.sin(deltaPhi / 2) +
+                  Math.cos(phi1) * Math.cos(phi2) *
+                  Math.sin(deltaLambda / 2) * Math.sin(deltaLambda / 2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+
+        return Math.round(R * c);
+    }
+
+    if (!navigator.geolocation) {
+        showGpsError('Geolocation is not supported by your browser. Please use Chrome, Safari, or a modern smartphone browser.');
+        return;
+    }
+
+    // Acquire GPS position with high accuracy
+    navigator.geolocation.getCurrentPosition(
+        (position) => {
+            const userLat = position.coords.latitude;
+            const userLon = position.coords.longitude;
+
+            if (latInput) latInput.value = userLat;
+            if (lonInput) lonInput.value = userLon;
+
+            const distance = calculateDistance(userLat, userLon, churchLat, churchLon);
+
+            if (distance <= churchRadius) {
+                // INSIDE GEOFENCE
+                if (statusCard) {
+                    statusCard.className = 'mb-6 p-4 rounded-2xl border-2 border-emerald-300 bg-emerald-50 text-emerald-900 transition-all';
+                    iconContainer.className = 'w-8 h-8 rounded-full bg-emerald-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs';
+                    spinner.classList.add('hidden');
+                    successIcon.classList.remove('hidden');
+                    statusTitle.textContent = 'Location Verified Inside Sanctuary';
+                    statusTitle.className = 'text-xs font-bold text-emerald-950 uppercase tracking-wider';
+                    statusDesc.textContent = `You are within church premises (${distance}m from sanctuary center). Enter your Member ID below to mark attendance.`;
+                    statusDesc.className = 'text-xs text-emerald-800 mt-0.5 leading-relaxed';
+                }
+                const calibBox = document.getElementById('gps-calibrate-container');
+                if (calibBox) calibBox.classList.add('hidden');
+                if (submitBtn) submitBtn.disabled = false;
+            } else {
+                // OUTSIDE GEOFENCE
+                if (statusCard) {
+                    statusCard.className = 'mb-6 p-4 rounded-2xl border-2 border-red-300 bg-red-50 text-red-900 transition-all';
+                    iconContainer.className = 'w-8 h-8 rounded-full bg-red-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs';
+                    spinner.classList.add('hidden');
+                    errorIcon.classList.remove('hidden');
+                    statusTitle.textContent = 'Outside Church Premises';
+                    statusTitle.className = 'text-xs font-bold text-red-950 uppercase tracking-wider';
+                    statusDesc.textContent = `You are approximately ${distance}m away (maximum allowed radius is ${churchRadius}m). You cannot mark attendance remotely.`;
+                    statusDesc.className = 'text-xs text-red-800 mt-0.5 leading-relaxed';
+                }
+                const calibBox = document.getElementById('gps-calibrate-container');
+                const badge = document.getElementById('detected-coords-badge');
+                if (calibBox) calibBox.classList.remove('hidden');
+                if (badge) badge.textContent = `GPS: ${userLat.toFixed(5)}, ${userLon.toFixed(5)}`;
+                if (submitBtn) submitBtn.disabled = true;
+
+                // Bind Calibration Button
+                const btnCalib = document.getElementById('btn-calibrate-church');
+                if (btnCalib && !btnCalib.dataset.bound) {
+                    btnCalib.dataset.bound = 'true';
+                    btnCalib.addEventListener('click', () => {
+                        btnCalib.disabled = true;
+                        btnCalib.innerHTML = `
+                            <svg class="animate-spin w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24">
+                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path>
+                            </svg>
+                            <span>Updating Church Coordinates to Here...</span>
+                        `;
+
+                        const formData = new FormData();
+                        formData.append('latitude', userLat);
+                        formData.append('longitude', userLon);
+                        formData.append('radius', 150);
+                        formData.append('csrfmiddlewaretoken', '{{ csrf_token }}');
+
+                        fetch("{% url 'attendance:location_calibrate' location_id=church_location.id %}", {
+                            method: 'POST',
+                            body: formData,
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
+                        .then(r => r.json())
+                        .then(data => {
+                            if (data.status === 'success') {
+                                window.location.reload();
+                            } else {
+                                alert('Calibration error: ' + (data.message || 'Failed'));
+                                btnCalib.disabled = false;
+                                btnCalib.innerHTML = '<span>Set Church Location to My Current Position</span>';
+                            }
+                        })
+                        .catch(err => {
+                            alert('Network error during calibration: ' + err.message);
+                            btnCalib.disabled = false;
+                            btnCalib.innerHTML = '<span>Set Church Location to My Current Position</span>';
+                        });
+                    });
+                }
+            }
+        },
+        (error) => {
+            let msg = 'Unable to verify your location. Please turn on GPS and allow location access in your browser settings to mark attendance.';
+            if (error.code === error.PERMISSION_DENIED) {
+                msg = 'Location permission was denied. Church attendance requires location access to verify physical presence.';
+            }
+            showGpsError(msg);
+        },
+        {
+            enableHighAccuracy: true,
+            timeout: 10000,
+            maximumAge: 0
+        }
+    );
+
+    function showGpsError(message) {
+        if (statusCard) {
+            statusCard.className = 'mb-6 p-4 rounded-2xl border-2 border-amber-300 bg-amber-50 text-amber-900 transition-all';
+            iconContainer.className = 'w-8 h-8 rounded-full bg-amber-600 text-white flex items-center justify-center shrink-0 mt-0.5 shadow-xs';
+            spinner.classList.add('hidden');
+            errorIcon.classList.remove('hidden');
+            statusTitle.textContent = 'GPS Permission Required';
+            statusTitle.className = 'text-xs font-bold text-amber-950 uppercase tracking-wider';
+            statusDesc.textContent = message;
+            statusDesc.className = 'text-xs text-amber-800 mt-0.5 leading-relaxed';
+        }
+        if (submitBtn) submitBtn.disabled = true;
+    }
+});
+</script>
+{% endblock %}

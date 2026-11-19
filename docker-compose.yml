@@ -1,0 +1,146 @@
+services:
+  # -------------------------------------------------------------
+  # 1. PostgreSQL Relational Database
+  # -------------------------------------------------------------
+  postgres:
+    image: postgres:16-alpine
+    container_name: church_attendance_db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-fy_attendance}
+      POSTGRES_USER: ${POSTGRES_USER:-fy_user}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-fy_secret_password}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-fy_user} -d ${POSTGRES_DB:-fy_attendance}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  # -------------------------------------------------------------
+  # 2. Redis Cache & Celery Message Broker
+  # -------------------------------------------------------------
+  redis:
+    image: redis:7-alpine
+    container_name: church_attendance_redis
+    restart: unless-stopped
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - app_network
+
+  # -------------------------------------------------------------
+  # 3. Django Web Application (Gunicorn + WhiteNoise)
+  # -------------------------------------------------------------
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: church_attendance_web
+    restart: unless-stopped
+    command: gunicorn config.wsgi:application --bind 0.0.0.0:8000 --workers 3 --timeout 120 --access-logfile - --error-logfile -
+    ports:
+      - "${PORT:-8000}:8000"
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DEBUG=${DEBUG:-False}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-production-key-change-me-please-1234567890}
+      - ALLOWED_HOSTS=${ALLOWED_HOSTS:-localhost,127.0.0.1,web}
+      - CSRF_TRUSTED_ORIGINS=${CSRF_TRUSTED_ORIGINS:-http://localhost:8000,http://127.0.0.1:8000}
+      - DATABASE_URL=postgres://${POSTGRES_USER:-fy_user}:${POSTGRES_PASSWORD:-fy_secret_password}@postgres:5432/${POSTGRES_DB:-fy_attendance}
+      - CACHE_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MNOTIFY_API_KEY=${MNOTIFY_API_KEY:-}
+      - MNOTIFY_SENDER_ID=${MNOTIFY_SENDER_ID:-CHURCH}
+      - MNOTIFY_API_URL=${MNOTIFY_API_URL:-https://api.mnotify.com/api/}
+    volumes:
+      - media_volume:/app/media
+      - static_volume:/app/staticfiles
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  # -------------------------------------------------------------
+  # 4. Celery Worker (Asynchronous SMS & Background Tasks)
+  # -------------------------------------------------------------
+  celery_worker:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: church_attendance_celery_worker
+    restart: unless-stopped
+    entrypoint: []
+    command: celery -A config worker --loglevel=info --concurrency=2
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DEBUG=${DEBUG:-False}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-production-key-change-me-please-1234567890}
+      - DATABASE_URL=postgres://${POSTGRES_USER:-fy_user}:${POSTGRES_PASSWORD:-fy_secret_password}@postgres:5432/${POSTGRES_DB:-fy_attendance}
+      - CACHE_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MNOTIFY_API_KEY=${MNOTIFY_API_KEY:-}
+      - MNOTIFY_SENDER_ID=${MNOTIFY_SENDER_ID:-CHURCH}
+      - MNOTIFY_API_URL=${MNOTIFY_API_URL:-https://api.mnotify.com/api/}
+    volumes:
+      - media_volume:/app/media
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app_network
+
+  # -------------------------------------------------------------
+  # 5. Celery Beat (Daily Birthday Wishes & Scheduled Tasks)
+  # -------------------------------------------------------------
+  celery_beat:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: church_attendance_celery_beat
+    restart: unless-stopped
+    entrypoint: []
+    command: celery -A config beat --loglevel=info
+    environment:
+      - DJANGO_SETTINGS_MODULE=config.settings.production
+      - DEBUG=${DEBUG:-False}
+      - SECRET_KEY=${SECRET_KEY:-django-insecure-production-key-change-me-please-1234567890}
+      - DATABASE_URL=postgres://${POSTGRES_USER:-fy_user}:${POSTGRES_PASSWORD:-fy_secret_password}@postgres:5432/${POSTGRES_DB:-fy_attendance}
+      - CACHE_URL=redis://redis:6379/1
+      - CELERY_BROKER_URL=redis://redis:6379/0
+      - CELERY_RESULT_BACKEND=redis://redis:6379/0
+      - MNOTIFY_API_KEY=${MNOTIFY_API_KEY:-}
+      - MNOTIFY_SENDER_ID=${MNOTIFY_SENDER_ID:-CHURCH}
+      - MNOTIFY_API_URL=${MNOTIFY_API_URL:-https://api.mnotify.com/api/}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    networks:
+      - app_network
+
+volumes:
+  postgres_data:
+  redis_data:
+  media_volume:
+  static_volume:
+
+networks:
+  app_network:
+    driver: bridge

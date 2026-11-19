@@ -1,0 +1,228 @@
+{% load static %}
+<!-- ============================================================== -->
+<!-- SIDEBAR — Fixed drawer on mobile, persistent on desktop        -->
+<!-- ============================================================== -->
+<aside id="sidebar"
+       class="fixed inset-y-0 left-0 z-50 flex flex-col w-72 bg-[#062045] text-slate-300 border-r border-[#0c2b5a]
+              lg:sticky lg:top-0 lg:h-screen lg:w-64 lg:shrink-0 lg:z-auto"
+       aria-label="Main navigation">
+
+    <!-- ── Top section: branding + X button ────────────────────── -->
+    <div class="flex items-center justify-between px-5 pt-5 pb-4 border-b border-[#0c2b5a]/80 shrink-0">
+
+        <!-- Logo & Brand -->
+        <a href="{% url 'admin_dashboard' %}" class="flex items-center gap-3 group">
+            <div class="w-10 h-10 rounded-xl overflow-hidden bg-white/10 border border-white/20 flex items-center justify-center p-1 shadow-sm shrink-0 group-hover:scale-105 transition-transform">
+                <img src="{% static 'images/logo.jpg' %}" alt="Church Logo" class="w-full h-full object-contain rounded-lg">
+            </div>
+            <div>
+                <h1 class="font-extrabold text-white text-base tracking-tight leading-tight">Church Attendance</h1>
+                <span class="text-xs text-blue-400 font-medium">System Portal</span>
+            </div>
+        </a>
+
+        <!-- Mobile close (X) button — hidden on desktop -->
+        <button id="sidebar-close"
+                type="button"
+                class="lg:hidden flex items-center justify-center w-8 h-8 rounded-xl text-slate-400 hover:text-white hover:bg-white/10 transition"
+                aria-label="Close navigation">
+            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M6 18L18 6M6 6l12 12"/>
+            </svg>
+        </button>
+    </div>
+
+    <!-- ── Scrollable nav area ───────────────────────────────────── -->
+    <div class="flex-1 overflow-y-auto py-4 px-3 space-y-0.5 sidebar-scroll">
+
+        <!-- 1. Dashboard -->
+        <a href="{% url 'admin_dashboard' %}"
+           onclick="closeSidebarOnMobile()"
+           class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold transition
+                  {% if request.resolver_match.url_name == 'admin_dashboard' %}bg-[#0c4ab1] text-white shadow-md{% else %}text-slate-300 hover:text-white hover:bg-[#0c2b5a]/60{% endif %}">
+            <svg class="w-4 h-4 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6"/>
+            </svg>
+            <span>Dashboard</span>
+        </a>
+
+        <!-- 2. Attendance Accordion -->
+        <div>
+            <button type="button"
+                    onclick="toggleMenu('attendance-menu')"
+                    class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-[#0c2b5a]/60 transition group cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <svg class="w-4 h-4 shrink-0 text-slate-400 group-hover:text-blue-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/>
+                    </svg>
+                    <span>Attendance</span>
+                </div>
+                <svg id="attendance-arrow" class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div id="attendance-menu" class="hidden pl-7 pr-2 pt-1 pb-2 space-y-0.5">
+                <a href="{% url 'attendance:attendance_dashboard' %}" onclick="closeSidebarOnMobile()" class="sidebar-sublink flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-[#0c2b5a]/40 transition">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/></svg>
+                    <span>View Attendance</span>
+                </a>
+                <button type="button" onclick="closeSidebarOnMobile(); openQuickAttendanceModal();"
+                        class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-emerald-400 hover:text-emerald-300 hover:bg-emerald-950/30 transition cursor-pointer">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+                    <span>Mark Attendance</span>
+                </button>
+                <a href="{% url 'attendance:usher_desk' %}" onclick="closeSidebarOnMobile()" class="sidebar-sublink flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-[#0c2b5a]/40 transition">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/></svg>
+                    <span>Usher Desk Station</span>
+                </a>
+                <a href="{% url 'attendance:attendance_dashboard' %}" onclick="closeSidebarOnMobile()" class="sidebar-sublink flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-[#0c2b5a]/40 transition">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/></svg>
+                    <span>Attendance Reports</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 3. Members Accordion -->
+        <div>
+            <button type="button"
+                    onclick="toggleMenu('members-menu')"
+                    class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-[#0c2b5a]/60 transition group cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <svg class="w-4 h-4 shrink-0 text-slate-400 group-hover:text-blue-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                    </svg>
+                    <span>Members</span>
+                </div>
+                <svg id="members-arrow" class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div id="members-menu" class="hidden pl-7 pr-2 pt-1 pb-2 space-y-0.5">
+                <a href="{% url 'members:member_list' %}" onclick="closeSidebarOnMobile()" class="sidebar-sublink flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-[#0c2b5a]/40 transition">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>
+                    <span>All Congregants</span>
+                </a>
+                <button type="button" onclick="closeSidebarOnMobile(); openAddMemberModal();"
+                        class="w-full text-left flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-blue-300 hover:text-white hover:bg-[#0c2b5a]/40 transition cursor-pointer">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                    <span>+ Add Member (Modal)</span>
+                </button>
+                <a href="{% url 'members:department_list' %}" onclick="closeSidebarOnMobile()" class="sidebar-sublink flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-[#0c2b5a]/40 transition">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"/></svg>
+                    <span>Departments</span>
+                </a>
+                {% if is_admin %}
+                <a href="{% url 'members:bulk_upload' %}" onclick="closeSidebarOnMobile()" class="sidebar-sublink flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-[#0c2b5a]/40 transition">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/></svg>
+                    <span>Bulk Excel Upload</span>
+                </a>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- 4. Church Services Accordion -->
+        <div>
+            <button type="button"
+                    onclick="toggleMenu('services-menu')"
+                    class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-[#0c2b5a]/60 transition group cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <svg class="w-4 h-4 shrink-0 text-slate-400 group-hover:text-blue-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                    </svg>
+                    <span>Church Services</span>
+                </div>
+                <svg id="services-arrow" class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div id="services-menu" class="hidden pl-7 pr-2 pt-1 pb-2 space-y-0.5">
+                <a href="{% url 'attendance:session_list' %}" onclick="closeSidebarOnMobile()" class="sidebar-sublink flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-[#0c2b5a]/40 transition">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
+                    <span>Service Sessions</span>
+                </a>
+                <a href="{% url 'attendance:session_create' %}" onclick="closeSidebarOnMobile()" class="sidebar-sublink flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-[#0c2b5a]/40 transition">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M12 4v16m8-8H4"/></svg>
+                    <span>+ New Service</span>
+                </a>
+                <a href="{% url 'attendance:entrance_poster' %}" onclick="closeSidebarOnMobile()" class="sidebar-sublink flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-bold text-amber-300 hover:text-amber-200 hover:bg-amber-950/20 transition">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/></svg>
+                    <span>Print Entrance Poster</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- 5. Reports -->
+        <a href="{% url 'attendance:attendance_dashboard' %}"
+           onclick="closeSidebarOnMobile()"
+           class="sidebar-link flex items-center gap-3 px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-[#0c2b5a]/60 transition group">
+            <svg class="w-4 h-4 shrink-0 text-slate-400 group-hover:text-blue-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+            </svg>
+            <span>Reports</span>
+        </a>
+
+        <!-- 6. Bulk SMS -->
+        <a href="{% url 'members:bulk_sms' %}"
+           onclick="closeSidebarOnMobile()"
+           class="sidebar-link flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold transition group
+                  {% if request.resolver_match.url_name == 'bulk_sms' %}bg-[#0c4ab1] text-white shadow-md{% else %}text-slate-300 hover:text-white hover:bg-[#0c2b5a]/60{% endif %}">
+            <div class="flex items-center gap-3">
+                <svg class="w-4 h-4 shrink-0 text-slate-400 group-hover:text-blue-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                <span>Bulk SMS</span>
+            </div>
+        </a>
+
+        <!-- 7. Settings (Admin only) -->
+        {% if is_admin %}
+        <div>
+            <button type="button"
+                    onclick="toggleMenu('settings-menu')"
+                    class="w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-sm font-semibold text-slate-300 hover:text-white hover:bg-[#0c2b5a]/60 transition group cursor-pointer">
+                <div class="flex items-center gap-3">
+                    <svg class="w-4 h-4 shrink-0 text-slate-400 group-hover:text-blue-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                    </svg>
+                    <span>Settings (Admin)</span>
+                </div>
+                <svg id="settings-arrow" class="w-3.5 h-3.5 text-slate-500 transition-transform duration-200" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M19 9l-7 7-7-7"/>
+                </svg>
+            </button>
+            <div id="settings-menu" class="hidden pl-7 pr-2 pt-1 pb-2 space-y-0.5">
+                <a href="{% url 'staff_users_dashboard' %}" onclick="closeSidebarOnMobile()" class="sidebar-sublink flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-[#0c2b5a]/40 transition">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"/></svg>
+                    <span>Staff Accounts</span>
+                </a>
+                <a href="{% url 'attendance:location_list' %}" onclick="closeSidebarOnMobile()" class="sidebar-sublink flex items-center gap-2 px-3 py-2 rounded-lg text-xs font-medium text-slate-400 hover:text-white hover:bg-[#0c2b5a]/40 transition">
+                    <svg class="w-3.5 h-3.5 shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                    <span>Geofence Boundaries</span>
+                </a>
+            </div>
+        </div>
+        {% endif %}
+
+    </div>
+
+    <!-- ── Sidebar footer ────────────────────────────────────────── -->
+    <div class="shrink-0 p-5 border-t border-[#0c2b5a]/80 bg-gradient-to-t from-[#0c2b5a] via-[#062045] to-transparent">
+        <div class="flex flex-col items-center text-center space-y-1">
+            <svg class="w-6 h-6 text-white mb-1 drop-shadow" viewBox="0 0 24 24" fill="currentColor">
+                <path d="M11 2h2v6h5v2h-5v12h-2V10H6V8h5V2z"/>
+            </svg>
+            <div class="text-xs font-bold text-white tracking-wide">Together in Faith,</div>
+            <div class="text-[11px] text-blue-300">Growing in Christ</div>
+        </div>
+    </div>
+
+</aside>
+
+<style>
+/* Custom thin scrollbar for sidebar */
+.sidebar-scroll::-webkit-scrollbar { width: 4px; }
+.sidebar-scroll::-webkit-scrollbar-track { background: transparent; }
+.sidebar-scroll::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.15); border-radius: 9999px; }
+.sidebar-scroll::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.3); }
+</style>

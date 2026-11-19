@@ -1,0 +1,131 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Import Results | Church Attendance System{% endblock %}
+
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+    <!-- Back Link -->
+    <div>
+        <a href="{% url 'members:member_list' %}" class="inline-flex items-center gap-2 text-xs font-semibold text-blue-600 hover:text-blue-800 transition">
+            <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.2" d="M10 19l-7-7m0 0l7-7m-7 7h18"/>
+            </svg>
+            <span>View All Congregants</span>
+        </a>
+    </div>
+
+        <!-- Results Card -->
+        <div class="bg-white rounded-2xl border border-slate-200/80 shadow-xs overflow-hidden">
+
+            <!-- Header -->
+            <div class="p-6 sm:p-8 border-b border-slate-200 bg-slate-50/60">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-xl {% if created_count > 0 %}bg-emerald-100 text-emerald-700{% else %}bg-amber-100 text-amber-700{% endif %} flex items-center justify-center">
+                        {% if created_count > 0 %}
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M5 13l4 4L19 7"/>
+                            </svg>
+                        {% else %}
+                            <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                        {% endif %}
+                    </div>
+                    <div>
+                        <h1 class="text-xl sm:text-2xl font-bold text-slate-900">Bulk Import Results</h1>
+                        <p class="text-xs sm:text-sm text-slate-500 mt-0.5">{{ total_processed }} row{{ total_processed|pluralize }} processed from the uploaded spreadsheet.</p>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-6 sm:p-8 space-y-6">
+
+                <!-- Summary Stats -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <!-- Successfully Imported -->
+                    <div class="rounded-xl border border-emerald-200 bg-emerald-50/60 p-4 text-center">
+                        <p class="text-3xl font-extrabold text-emerald-700">{{ created_count }}</p>
+                        <p class="text-xs font-semibold text-emerald-600 mt-1 uppercase tracking-wider">Successfully Imported</p>
+                    </div>
+
+                    <!-- Rows with Errors -->
+                    <div class="rounded-xl border {% if error_count > 0 %}border-red-200 bg-red-50/60{% else %}border-slate-200 bg-slate-50{% endif %} p-4 text-center">
+                        <p class="text-3xl font-extrabold {% if error_count > 0 %}text-red-700{% else %}text-slate-400{% endif %}">{{ error_count }}</p>
+                        <p class="text-xs font-semibold {% if error_count > 0 %}text-red-600{% else %}text-slate-500{% endif %} mt-1 uppercase tracking-wider">Rows Skipped (Errors)</p>
+                    </div>
+
+                    <!-- Total -->
+                    <div class="rounded-xl border border-slate-200 bg-slate-50 p-4 text-center">
+                        <p class="text-3xl font-extrabold text-slate-700">{{ total_processed }}</p>
+                        <p class="text-xs font-semibold text-slate-500 mt-1 uppercase tracking-wider">Total Rows Processed</p>
+                    </div>
+                </div>
+
+                <!-- Error Details Table -->
+                {% if errors %}
+                    <div>
+                        <h2 class="text-sm font-bold text-red-900 uppercase tracking-wider mb-3 flex items-center gap-2">
+                            <svg class="w-4 h-4 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                            </svg>
+                            <span>Rows That Need Fixing</span>
+                        </h2>
+                        <p class="text-xs text-slate-600 mb-4">Fix the issues listed below in your spreadsheet and re-upload only the corrected rows.</p>
+
+                        <div class="overflow-x-auto rounded-xl border border-red-200">
+                            <table class="w-full text-left border-collapse text-sm">
+                                <thead>
+                                    <tr class="bg-red-50 text-xs font-bold uppercase tracking-wider text-red-700">
+                                        <th class="py-3 px-4 border-b border-red-200 w-16">Row</th>
+                                        <th class="py-3 px-4 border-b border-red-200">Name</th>
+                                        <th class="py-3 px-4 border-b border-red-200">Issue(s)</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-red-100">
+                                    {% for err in errors %}
+                                        <tr class="hover:bg-red-50/50">
+                                            <td class="py-3 px-4 font-bold text-red-700">{{ err.row }}</td>
+                                            <td class="py-3 px-4 text-slate-900 font-medium whitespace-nowrap">{{ err.name }}</td>
+                                            <td class="py-3 px-4">
+                                                <ul class="space-y-0.5">
+                                                    {% for issue in err.issues %}
+                                                        <li class="flex items-start gap-1.5 text-xs text-red-700">
+                                                            <span class="text-red-400 shrink-0 mt-0.5">&bull;</span>
+                                                            <span>{{ issue }}</span>
+                                                        </li>
+                                                    {% endfor %}
+                                                </ul>
+                                            </td>
+                                        </tr>
+                                    {% endfor %}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- Action Buttons -->
+                <div class="pt-4 border-t border-slate-200 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <a href="{% url 'members:bulk_upload' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg border border-slate-300 text-slate-700 text-sm font-semibold hover:bg-slate-50 transition">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"/>
+                        </svg>
+                        <span>Upload Another File</span>
+                    </a>
+
+                    <a href="{% url 'members:member_list' %}" class="inline-flex items-center gap-2 px-5 py-2.5 rounded-lg brand-blue text-white text-sm font-semibold shadow-xs hover:opacity-95 transition">
+                        <span>View All Congregants</span>
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M14 5l7 7m0 0l-7 7m7-7H3"/>
+                        </svg>
+                    </a>
+                </div>
+
+            </div>
+
+        </div>
+
+</div>
+{% endblock %}

@@ -1,0 +1,547 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Bulk SMS Broadcast | Church Attendance System{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Header Row -->
+    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+            <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-600 mb-1">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                </svg>
+                <span>Mnotify Gateway</span>
+            </div>
+            <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                Bulk SMS Broadcast
+            </h1>
+            <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
+                Broadcast instant announcements, ministry reminders, and follow-ups to church members via Mnotify.
+            </p>
+        </div>
+
+        <!-- Mnotify Account & Credit Balance Pill -->
+        <div class="flex items-center gap-2 self-start sm:self-auto">
+            <div class="px-4 py-2.5 rounded-2xl bg-white border border-slate-200/90 shadow-xs flex items-center gap-3">
+                <div class="w-8 h-8 rounded-xl bg-blue-50 text-blue-600 flex items-center justify-center font-bold text-xs shrink-0">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                    </svg>
+                </div>
+                <div>
+                    <div class="text-[10px] font-bold uppercase tracking-wider text-slate-400">SMS Credits</div>
+                    <div class="text-sm font-extrabold text-slate-900">
+                        {% if balance_info.success %}
+                            <span class="text-emerald-600">{{ balance_info.balance|floatformat:0 }}</span> units
+                        {% elif balance_info.simulated %}
+                            <span class="text-blue-600 font-semibold text-xs">Dev Simulation</span>
+                        {% else %}
+                            <span class="text-slate-500 text-xs">Mnotify Ready</span>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Grid: Composer (Left) & Live Target Preview (Right) -->
+    <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+
+        <!-- SMS Composer Form (Span 8 Cols) -->
+        <div class="lg:col-span-8 bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+            
+            <div class="p-5 sm:p-6 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
+                <div class="flex items-center gap-2.5">
+                    <div class="w-7 h-7 rounded-lg bg-blue-600 text-white flex items-center justify-center font-bold text-xs">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                        </svg>
+                    </div>
+                    <h2 class="text-sm font-bold text-slate-900">Compose SMS Broadcast</h2>
+                </div>
+                <span class="text-[11px] text-slate-400 font-medium">Mnotify Quick SMS Engine</span>
+            </div>
+
+            <form method="POST" action="{% url 'members:bulk_sms' %}" id="bulk-sms-form" class="p-5 sm:p-6 space-y-5">
+                {% csrf_token %}
+
+                <!-- Campaign Title (Optional) -->
+                <div>
+                    <label for="sms-title" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Campaign Title (Optional Reference)
+                    </label>
+                    <input 
+                        type="text" 
+                        name="title" 
+                        id="sms-title" 
+                        placeholder="e.g. Sunday Service Reminder, Choir Rehearsal Notice" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition">
+                </div>
+
+                <!-- 1. Target Audience Selection -->
+                <div>
+                    <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-2">
+                        Target Audience *
+                    </label>
+
+                    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2.5">
+                        <!-- Target: All Congregants -->
+                        <label class="relative flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/60 cursor-pointer hover:bg-blue-50/50 hover:border-blue-200 transition target-option-label" data-target="all">
+                            <input type="radio" name="target_type" value="all" checked class="text-blue-600 focus:ring-blue-500 target-radio">
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-900">All Congregants</div>
+                                <div class="text-[11px] text-slate-500">{{ total_members_count }} church members</div>
+                            </div>
+                        </label>
+
+                        <!-- Target: By Department -->
+                        <label class="relative flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/60 cursor-pointer hover:bg-blue-50/50 hover:border-blue-200 transition target-option-label" data-target="department">
+                            <input type="radio" name="target_type" value="department" class="text-blue-600 focus:ring-blue-500 target-radio">
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-900">Specific Department</div>
+                                <div class="text-[11px] text-slate-500">Choir, Ushers, Youth...</div>
+                            </div>
+                        </label>
+
+                        <!-- Target: Service Attendees (Present) -->
+                        <label class="relative flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/60 cursor-pointer hover:bg-blue-50/50 hover:border-blue-200 transition target-option-label" data-target="session_present">
+                            <input type="radio" name="target_type" value="session_present" class="text-blue-600 focus:ring-blue-500 target-radio">
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-900">Present Attendees</div>
+                                <div class="text-[11px] text-slate-500">Service attendees list</div>
+                            </div>
+                        </label>
+
+                        <!-- Target: Absent from Service -->
+                        <label class="relative flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/60 cursor-pointer hover:bg-blue-50/50 hover:border-blue-200 transition target-option-label" data-target="session_absent">
+                            <input type="radio" name="target_type" value="session_absent" class="text-blue-600 focus:ring-blue-500 target-radio">
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-900">Absent Members</div>
+                                <div class="text-[11px] text-slate-500">Follow-up with absentees</div>
+                            </div>
+                        </label>
+
+                        <!-- Target: Birthday Celebrants -->
+                        <label class="relative flex items-center gap-3 p-3 rounded-xl border border-pink-200 bg-pink-50/40 cursor-pointer hover:bg-pink-100/60 hover:border-pink-300 transition target-option-label" data-target="birthday">
+                            <input type="radio" name="target_type" value="birthday" class="text-pink-600 focus:ring-pink-500 target-radio">
+                            <div class="flex-1 min-w-0">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-xs font-bold text-slate-900">Birthday Celebrants</span>
+                                    <span class="px-1.5 py-0.2 rounded text-[9px] font-extrabold bg-pink-200 text-pink-800">🎂 Today</span>
+                                </div>
+                                <div class="text-[11px] text-slate-500">Personalized wishes to today's celebrants</div>
+                            </div>
+                        </label>
+
+                        <!-- Target: Custom Numbers -->
+                        <label class="relative flex items-center gap-3 p-3 rounded-xl border border-slate-200 bg-slate-50/60 cursor-pointer hover:bg-blue-50/50 hover:border-blue-200 transition target-option-label" data-target="custom">
+                            <input type="radio" name="target_type" value="custom" class="text-blue-600 focus:ring-blue-500 target-radio">
+                            <div class="flex-1 min-w-0">
+                                <div class="text-xs font-bold text-slate-900">Custom Phone Numbers</div>
+                                <div class="text-[11px] text-slate-500">Direct manual list</div>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- 2. Dynamic Dropdowns based on selected target -->
+                <!-- Department Selector -->
+                <div id="department-select-wrap" class="hidden">
+                    <label for="department_id" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Select Church Department *
+                    </label>
+                    <select name="department_id" id="department_id" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition">
+                        <option value="">-- Choose Department / Ministry --</option>
+                        {% for d in departments %}
+                            <option value="{{ d.id }}">{{ d.name }} ({{ d.members.count }} members)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Service Session Selector -->
+                <div id="session-select-wrap" class="hidden">
+                    <label for="session_id" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Select Attendance Service Session *
+                    </label>
+                    <select name="session_id" id="session_id" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition">
+                        <option value="">-- Choose Church Service --</option>
+                        {% for s in recent_sessions %}
+                            <option value="{{ s.id }}">{{ s.title }} &bull; {{ s.date|date:"D, M d, Y" }} ({{ s.records.count }} attended)</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <!-- Birthday Notice Box (Shown when Birthday Celebrants is selected) -->
+                <div id="birthday-info-wrap" class="hidden p-4 rounded-xl bg-pink-50/80 border border-pink-200">
+                    <div class="flex items-start gap-3">
+                        <div class="text-xl">🎂</div>
+                        <div class="flex-1 min-w-0">
+                            <h4 class="text-xs font-bold text-pink-900">Today's Birthday Celebrants</h4>
+                            <p class="text-[11px] text-pink-700 mt-0.5">
+                                Messages are automatically personalized with each member's first name. You can use 
+                                <code class="px-1 py-0.5 bg-pink-100 rounded text-pink-800 font-mono text-[10px]">{first_name}</code>, 
+                                <code class="px-1 py-0.5 bg-pink-100 rounded text-pink-800 font-mono text-[10px]">{name}</code>, or 
+                                <code class="px-1 py-0.5 bg-pink-100 rounded text-pink-800 font-mono text-[10px]">{member_id}</code>.
+                            </p>
+                            <div class="mt-2 flex flex-wrap gap-1.5">
+                                {% for m in today_birthdays %}
+                                    <span class="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[11px] font-semibold bg-white border border-pink-200 text-pink-800 shadow-2xs">
+                                        <span>{{ m.name }}</span>
+                                        <span class="text-pink-400 font-mono text-[10px]">({{ m.member_id }})</span>
+                                    </span>
+                                {% empty %}
+                                    <span class="text-[11px] text-pink-600 italic">No members have their birthday recorded for today.</span>
+                                {% endfor %}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Custom Numbers Textarea -->
+                <div id="custom-numbers-wrap" class="hidden">
+                    <label for="custom_numbers" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                        Enter Phone Numbers (Comma, space or new line separated)
+                    </label>
+                    <textarea 
+                        name="custom_numbers" 
+                        id="custom_numbers" 
+                        rows="2" 
+                        placeholder="0244123456, 0209876543, 0551122334" 
+                        class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition font-mono"></textarea>
+                </div>
+
+                <!-- 3. Sender ID & Quick Variable Chips -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                        <label for="sender_id" class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Sender ID (Max 11 Alphanumeric characters) *
+                        </label>
+                        <input 
+                            type="text" 
+                            name="sender_id" 
+                            id="sender_id" 
+                            maxlength="11" 
+                            value="{{ default_sender }}" 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-900 uppercase focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition">
+                        <p class="text-[11px] text-slate-400 mt-1">Appears as the sender on recipients' phones.</p>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-slate-700 uppercase tracking-wider mb-1.5">
+                            Quick Template Starters
+                        </label>
+                        <div class="flex flex-wrap gap-1.5">
+                            <button type="button" onclick="insertTemplate('reminder')" class="px-2.5 py-1 rounded-lg bg-blue-50 text-blue-700 border border-blue-200/80 text-[11px] font-semibold hover:bg-blue-100 transition cursor-pointer">
+                                Service Reminder
+                            </button>
+                            <button type="button" onclick="insertTemplate('missed')" class="px-2.5 py-1 rounded-lg bg-purple-50 text-purple-700 border border-purple-200/80 text-[11px] font-semibold hover:bg-purple-100 transition cursor-pointer">
+                                Missed You
+                            </button>
+                            <button type="button" onclick="insertTemplate('meeting')" class="px-2.5 py-1 rounded-lg bg-emerald-50 text-emerald-700 border border-emerald-200/80 text-[11px] font-semibold hover:bg-emerald-100 transition cursor-pointer">
+                                Meeting Notice
+                            </button>
+                            <button type="button" onclick="insertTemplate('birthday')" class="px-2.5 py-1 rounded-lg bg-pink-50 text-pink-700 border border-pink-200 text-[11px] font-semibold hover:bg-pink-100 transition cursor-pointer">
+                                🎂 Birthday Wish
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- 4. Message Body with Live Character Counter -->
+                <div>
+                    <div class="flex items-center justify-between mb-1.5">
+                        <label for="sms-message" class="block text-xs font-bold text-slate-700 uppercase tracking-wider">
+                            SMS Message Body *
+                        </label>
+                        <div id="char-counter" class="text-xs font-semibold text-slate-500">
+                            <span id="char-count">0</span> / 160 characters &bull; <span id="page-count" class="text-blue-600 font-bold">1 Page</span>
+                        </div>
+                    </div>
+
+                    <textarea 
+                        name="message" 
+                        id="sms-message" 
+                        rows="4" 
+                        required
+                        placeholder="Type your announcement or reminder message here..."
+                        class="w-full p-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-medium text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition leading-relaxed"></textarea>
+                </div>
+
+                <!-- Submit Button Row -->
+                <div class="pt-3 border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-3">
+                    <div class="text-xs text-slate-500 flex items-center gap-2">
+                        <span class="inline-block w-2 h-2 rounded-full bg-emerald-500"></span>
+                        <span>Estimated Recipients: <strong id="recipients-count-badge" class="text-slate-900 font-bold">{{ total_members_count }}</strong></span>
+                    </div>
+
+                    <button 
+                        type="submit" 
+                        id="submit-sms-btn" 
+                        class="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-6 py-2.5 rounded-xl bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs shadow-xs transition cursor-pointer">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                        </svg>
+                        <span>Send Broadcast Now</span>
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Right Side: Guidelines & Delivery Info (Span 4 Cols) -->
+        <div class="lg:col-span-4 space-y-6">
+
+            <!-- Information Card -->
+            <div class="bg-white rounded-2xl border border-slate-200 shadow-xs p-5">
+                <div class="flex items-center gap-2.5 pb-3 border-b border-slate-100">
+                    <div class="w-7 h-7 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center shrink-0">
+                        <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-xs font-bold text-slate-900">Mnotify SMS Rules</h3>
+                </div>
+
+                <div class="mt-4 space-y-3 text-xs text-slate-600 leading-relaxed">
+                    <div class="flex items-start gap-2">
+                        <span class="text-blue-600 font-bold">&bull;</span>
+                        <span><strong>Standard SMS Page:</strong> 160 characters = 1 credit per recipient. Exceeding 160 characters splits into multi-part messages (153 chars/page).</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-blue-600 font-bold">&bull;</span>
+                        <span><strong>Sender ID:</strong> Maximum of 11 characters, letters and numbers only.</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-blue-600 font-bold">&bull;</span>
+                        <span><strong>Authorized Roles:</strong> Superadmin, Clergy (Pastors), and Ushers can dispatch broadcasts.</span>
+                    </div>
+                    <div class="flex items-start gap-2">
+                        <span class="text-blue-600 font-bold">&bull;</span>
+                        <span><strong>Automatic Formatting:</strong> Phone numbers in Ghana (024, 020, 055...) are automatically normalized to carrier specifications.</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- API Status Badge -->
+            <div class="p-4 rounded-2xl bg-slate-900 text-white shadow-xs">
+                <div class="flex items-center justify-between text-xs pb-2 border-b border-slate-800">
+                    <span class="text-slate-400 font-bold uppercase text-[10px] tracking-wider">Gateway Status</span>
+                    {% if balance_info.success %}
+                        <span class="inline-flex items-center gap-1.5 text-[11px] text-emerald-400 font-bold">
+                            <span class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                            Live Active
+                        </span>
+                    {% else %}
+                        <span class="inline-flex items-center gap-1.5 text-[11px] text-blue-300 font-bold">
+                            <span class="w-2 h-2 rounded-full bg-blue-400"></span>
+                            Dev Mode
+                        </span>
+                    {% endif %}
+                </div>
+                <div class="mt-3 text-xs text-slate-300">
+                    Mnotify Quick SMS API connected. Dispatches are logged with response codes for auditing and delivery verification.
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- Bottom: Broadcast History Table -->
+    <div class="bg-white rounded-2xl border border-slate-200 shadow-xs overflow-hidden">
+        <div class="p-5 border-b border-slate-100 flex items-center justify-between">
+            <div class="flex items-center gap-2">
+                <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                </svg>
+                <h3 class="text-sm font-bold text-slate-900">Broadcast History &amp; Delivery Logs</h3>
+            </div>
+            <span class="text-xs text-slate-400">Past {{ campaigns|length }} broadcast(s)</span>
+        </div>
+
+        <div class="overflow-x-auto">
+            <table class="w-full text-left border-collapse text-xs">
+                <thead>
+                    <tr class="bg-slate-50/80 border-b border-slate-200 text-slate-500 font-bold uppercase text-[10px] tracking-wider">
+                        <th class="py-3 px-4">Date &amp; Time</th>
+                        <th class="py-3 px-4">Sender / Role</th>
+                        <th class="py-3 px-4">Target Audience</th>
+                        <th class="py-3 px-4">Recipients</th>
+                        <th class="py-3 px-4">Status</th>
+                        <th class="py-3 px-4">Message Preview</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    {% for c in campaigns %}
+                        <tr class="hover:bg-slate-50/60 transition">
+                            <td class="py-3 px-4 text-slate-700 whitespace-nowrap font-medium">
+                                {{ c.created_at|date:"M d, Y &bull; h:i A" }}
+                            </td>
+                            <td class="py-3 px-4 text-slate-800 font-semibold whitespace-nowrap">
+                                {% if c.sender_user %}
+                                    {{ c.sender_user.get_full_name|default:c.sender_user.email }}
+                                    <span class="text-[10px] text-blue-600 uppercase block font-bold">{{ c.sender_user.role|default:"Staff" }}</span>
+                                {% else %}
+                                    <span class="text-slate-600 font-medium">System Auto (Celery)</span>
+                                    <span class="text-[10px] text-emerald-600 uppercase block font-bold">Automated</span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4 text-slate-700 whitespace-nowrap font-medium">
+                                {% if c.department %}
+                                    <span class="px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 font-bold text-[10px]">
+                                        {{ c.department.name }}
+                                    </span>
+                                {% elif c.session_title %}
+                                    <span class="px-2 py-0.5 rounded-md bg-blue-50 text-blue-700 font-bold text-[10px]">
+                                        {{ c.session_title }}
+                                    </span>
+                                {% else %}
+                                    <span class="px-2 py-0.5 rounded-md bg-slate-100 text-slate-700 font-bold text-[10px]">
+                                        {{ c.get_target_type_display }}
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4 text-slate-900 font-black whitespace-nowrap">
+                                {{ c.recipient_count }}
+                            </td>
+                            <td class="py-3 px-4 whitespace-nowrap">
+                                {% if c.status == 'sent' %}
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-50 text-emerald-700 text-[10px] font-bold border border-emerald-200">
+                                        Delivered
+                                    </span>
+                                {% elif c.status == 'simulated' %}
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-blue-50 text-blue-700 text-[10px] font-bold border border-blue-200">
+                                        Simulated (Dev)
+                                    </span>
+                                {% else %}
+                                    <span class="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-red-50 text-red-700 text-[10px] font-bold border border-red-200">
+                                        Failed
+                                    </span>
+                                {% endif %}
+                            </td>
+                            <td class="py-3 px-4 text-slate-600 max-w-xs truncate" title="{{ c.message }}">
+                                "{{ c.message }}"
+                            </td>
+                        </tr>
+                    {% empty %}
+                        <tr>
+                            <td colspan="6" class="py-10 text-center text-slate-400">
+                                No SMS broadcasts recorded yet. Use the composer above to send your first message.
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+document.addEventListener('DOMContentLoaded', () => {
+    const messageInput = document.getElementById('sms-message');
+    const charCountEl = document.getElementById('char-count');
+    const pageCountEl = document.getElementById('page-count');
+    const targetRadios = document.querySelectorAll('.target-radio');
+    const deptWrap = document.getElementById('department-select-wrap');
+    const sessionWrap = document.getElementById('session-select-wrap');
+    const customWrap = document.getElementById('custom-numbers-wrap');
+    const birthdayWrap = document.getElementById('birthday-info-wrap');
+    const recipientBadge = document.getElementById('recipients-count-badge');
+    const deptSelect = document.getElementById('department_id');
+    const sessionSelect = document.getElementById('session_id');
+    const customInput = document.getElementById('custom_numbers');
+
+    // 1. Character & Page Counter
+    if (messageInput && charCountEl && pageCountEl) {
+        function updateCounter() {
+            const len = messageInput.value.length;
+            charCountEl.textContent = len;
+            const pages = len <= 160 ? 1 : Math.ceil(len / 153);
+            pageCountEl.textContent = pages + (pages === 1 ? ' Page' : ' Pages');
+        }
+        messageInput.addEventListener('input', updateCounter);
+        updateCounter();
+    }
+
+    // 2. Target switching logic
+    function handleTargetChange() {
+        const selected = document.querySelector('input[name="target_type"]:checked')?.value || 'all';
+        
+        deptWrap.classList.add('hidden');
+        sessionWrap.classList.add('hidden');
+        customWrap.classList.add('hidden');
+        if (birthdayWrap) birthdayWrap.classList.add('hidden');
+
+        if (selected === 'department') {
+            deptWrap.classList.remove('hidden');
+        } else if (selected === 'session_present' || selected === 'session_absent') {
+            sessionWrap.classList.remove('hidden');
+        } else if (selected === 'custom') {
+            customWrap.classList.remove('hidden');
+        } else if (selected === 'birthday') {
+            if (birthdayWrap) birthdayWrap.classList.remove('hidden');
+        }
+
+        updateRecipientCount();
+    }
+
+    targetRadios.forEach(r => r.addEventListener('change', handleTargetChange));
+
+    // 3. Dynamic recipient count update via AJAX
+    function updateRecipientCount() {
+        const targetType = document.querySelector('input[name="target_type"]:checked')?.value || 'all';
+        const deptId = deptSelect ? deptSelect.value : '';
+        const sessionId = sessionSelect ? sessionSelect.value : '';
+        const customText = customInput ? customInput.value : '';
+
+        const params = new URLSearchParams({
+            target_type: targetType,
+            department_id: deptId,
+            session_id: sessionId,
+            custom_numbers: customText,
+        });
+
+        fetch(`{% url 'members:sms_recipient_count' %}?${params.toString()}`)
+            .then(res => res.json())
+            .then(data => {
+                if (data.status === 'success' && recipientBadge) {
+                    recipientBadge.textContent = data.count + ' recipient' + (data.count === 1 ? '' : 's');
+                }
+            })
+            .catch(() => {});
+    }
+
+    if (deptSelect) deptSelect.addEventListener('change', updateRecipientCount);
+    if (sessionSelect) sessionSelect.addEventListener('change', updateRecipientCount);
+    if (customInput) customInput.addEventListener('input', updateRecipientCount);
+
+    // Initial load
+    handleTargetChange();
+});
+
+// Quick template insertion helper
+function insertTemplate(type) {
+    const textarea = document.getElementById('sms-message');
+    if (!textarea) return;
+
+    if (type === 'reminder') {
+        textarea.value = "Reminder: Join us tomorrow at church for our service! Doors open at 8:00 AM. Bring a friend and be blessed.";
+    } else if (type === 'missed') {
+        textarea.value = "We missed you at church today! We are praying for you and look forward to fellowshipping with you at our next service.";
+    } else if (type === 'meeting') {
+        textarea.value = "Notice: Special church ministry meeting scheduled for this week. Please make every effort to attend on time.";
+    } else if (type === 'birthday') {
+        textarea.value = "Happy Birthday {first_name}! 🎂 On this blessed day, the church family celebrates you. May God's favor, peace, and abundance overflow in your life this new year. Have a wonderful celebration!";
+    }
+
+    textarea.dispatchEvent(new Event('input'));
+    textarea.focus();
+}
+</script>
+{% endblock %}

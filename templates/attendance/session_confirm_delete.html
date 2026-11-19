@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Delete Service: {{ session.title }} | Church Attendance System{% endblock %}
+
+{% block content %}
+<div class="max-w-xl mx-auto py-8">
+    <div class="bg-white rounded-3xl border border-rose-100 shadow-xl overflow-hidden">
+        
+        <!-- Red Danger Header Banner -->
+        <div class="p-6 sm:p-8 bg-gradient-to-r from-rose-50 to-orange-50 border-b border-rose-100 flex items-center gap-4">
+            <div class="w-12 h-12 rounded-2xl bg-rose-100 text-rose-600 flex items-center justify-center shrink-0">
+                <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                </svg>
+            </div>
+            <div>
+                <h1 class="text-xl sm:text-2xl font-black text-slate-900 tracking-tight">Delete Church Service?</h1>
+                <p class="text-xs text-rose-700 font-semibold mt-0.5">This action cannot be undone.</p>
+            </div>
+        </div>
+
+        <div class="p-6 sm:p-8 space-y-5">
+            <p class="text-sm text-slate-600 leading-relaxed">
+                Are you sure you want to permanently delete the service <strong class="text-slate-900">"{{ session.title }}"</strong>?
+            </p>
+
+            <!-- Service Details Card -->
+            <div class="p-4 rounded-2xl bg-slate-50 border border-slate-200/80 text-xs space-y-2 text-slate-700">
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Service Date:</span>
+                    <strong class="text-slate-900">{{ session.date|date:"l, F d, Y" }}</strong>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Start Time:</span>
+                    <strong class="text-slate-900">{{ session.start_time|time:"g:i A" }}</strong>
+                </div>
+                <div class="flex justify-between">
+                    <span class="text-slate-400">Location:</span>
+                    <strong class="text-slate-900">{{ session.location.name }}</strong>
+                </div>
+                <div class="flex justify-between pt-2 border-t border-slate-200">
+                    <span class="text-slate-400">Recorded Attendees:</span>
+                    <span class="font-extrabold text-rose-600">{{ session.records.count }} attendance record(s)</span>
+                </div>
+            </div>
+
+            <div class="p-3.5 rounded-xl bg-amber-50 border border-amber-200 text-xs text-amber-800">
+                <strong>Warning:</strong> Deleting this service will also permanently erase all <strong>{{ session.records.count }}</strong> attendee check-in records associated with it.
+            </div>
+
+            <!-- Form Actions -->
+            <form method="POST" class="pt-3 flex items-center justify-end gap-3">
+                {% csrf_token %}
+                <a href="{% url 'attendance:session_list' %}" class="px-5 py-2.5 rounded-xl border border-slate-300 text-slate-700 font-bold text-xs hover:bg-slate-50 transition">
+                    Cancel
+                </a>
+                <button type="submit" class="px-5 py-2.5 rounded-xl bg-rose-600 hover:bg-rose-700 text-white font-bold text-xs shadow-xs transition cursor-pointer">
+                    Yes, Delete Service
+                </button>
+            </form>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

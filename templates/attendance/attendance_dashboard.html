@@ -1,0 +1,341 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Attendance Records &amp; Register | Church Attendance{% endblock %}
+
+{% block content %}
+<div class="space-y-6">
+
+    <!-- Top Header & Actions -->
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+                <div class="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-blue-700 mb-1">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"/>
+                    </svg>
+                    <span>Central Analytics</span>
+                </div>
+                <h1 class="text-2xl sm:text-3xl font-extrabold text-slate-900 tracking-tight">
+                    Attendance Register &amp; Reports
+                </h1>
+                <p class="text-xs sm:text-sm text-slate-500 mt-1">
+                    Filter attendance records across dates, months, services, departments, and check-in methods.
+                </p>
+            </div>
+
+            <!-- Action Buttons -->
+            <div class="flex flex-wrap items-center gap-3">
+                <a href="{% url 'attendance:entrance_poster' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-white border border-slate-300 text-slate-700 font-semibold text-xs shadow-xs hover:bg-slate-50 transition">
+                    <svg class="w-4 h-4 text-slate-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v1m6 11h2m-6 0h-2v4m0-11v3m0 0h.01M12 12h4.01M16 20h4M4 12h4m12 0h.01M5 8h2a1 1 0 001-1V5a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1zm12 0h2a1 1 0 001-1V5a1 1 0 00-1-1h-2a1 1 0 00-1 1v2a1 1 0 001 1zM5 20h2a1 1 0 001-1v-2a1 1 0 00-1-1H5a1 1 0 00-1 1v2a1 1 0 001 1z"/>
+                    </svg>
+                    <span>Print Entrance Poster</span>
+                </a>
+
+                <a href="{% url 'attendance:usher_desk' %}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold text-xs shadow-xs hover:bg-emerald-100 transition">
+                    <svg class="w-4 h-4 text-emerald-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    <span>Usher Desk</span>
+                </a>
+
+                <a href="{% url 'attendance:attendance_dashboard_export' %}?{{ request.GET.urlencode }}" class="inline-flex items-center gap-2 px-4 py-2.5 rounded-xl brand-blue text-white font-semibold text-xs shadow-sm hover:opacity-95 transition">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                    </svg>
+                    <span>Export Filtered to Excel</span>
+                </a>
+            </div>
+        </div>
+
+        <!-- Metric Stat Cards -->
+        <div class="grid grid-cols-2 lg:grid-cols-5 gap-3 sm:gap-4">
+            <!-- Card 1: Total Present -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-slate-400">Total Check-Ins</div>
+                <div class="text-2xl sm:text-3xl font-black text-slate-900 mt-1">{{ total_count }}</div>
+                <div class="text-[11px] text-slate-500 mt-1">Matching criteria</div>
+            </div>
+
+            <!-- Card 2: Mobile QR Self-Scans -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-emerald-600">Mobile QR Scans</div>
+                <div class="text-2xl sm:text-3xl font-black text-emerald-700 mt-1">{{ qr_count }}</div>
+                <div class="text-[11px] text-slate-500 mt-1">Geofence verified</div>
+            </div>
+
+            <!-- Card 3: Usher Manual Check-Ins -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-blue-600">Usher Desk Check-Ins</div>
+                <div class="text-2xl sm:text-3xl font-black text-blue-700 mt-1">{{ usher_count }}</div>
+                <div class="text-[11px] text-slate-500 mt-1">Manual / At Door</div>
+            </div>
+
+            <!-- Card 4: Unique Members -->
+            <div class="p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-purple-600">Unique Congregants</div>
+                <div class="text-2xl sm:text-3xl font-black text-purple-700 mt-1">{{ unique_members_count }}</div>
+                <div class="text-[11px] text-slate-500 mt-1">Distinct attendees</div>
+            </div>
+
+            <!-- Card 5: Departments Represented -->
+            <div class="col-span-2 lg:col-span-1 p-4 sm:p-5 rounded-2xl bg-white border border-slate-200 shadow-xs">
+                <div class="text-[11px] font-bold uppercase tracking-wider text-amber-600">Departments Active</div>
+                <div class="text-2xl sm:text-3xl font-black text-amber-700 mt-1">{{ unique_depts_count }}</div>
+                <div class="text-[11px] text-slate-500 mt-1">Ministries represented</div>
+            </div>
+        </div>
+
+        <!-- Filter Panel -->
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-xs p-5 sm:p-6">
+            <form method="GET" action="{% url 'attendance:attendance_dashboard' %}" class="space-y-4">
+                
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <div class="flex items-center gap-2 text-xs font-bold text-slate-800 uppercase tracking-wider">
+                        <svg class="w-4 h-4 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z"/>
+                        </svg>
+                        <span>Filter Register</span>
+                    </div>
+
+                    {% if date_filter or date_from or date_to or month_filter or year_filter or session_filter or dept_filter or method_filter or search_query %}
+                    <a href="{% url 'attendance:attendance_dashboard' %}" class="text-xs font-semibold text-rose-600 hover:text-rose-800 transition">
+                        Reset All Filters
+                    </a>
+                    {% endif %}
+                </div>
+
+                <!-- Filter Grid -->
+                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 text-xs font-semibold text-slate-700">
+                    
+                    <!-- Search Query -->
+                    <div class="sm:col-span-2 lg:col-span-1">
+                        <label class="block mb-1 text-slate-500 font-bold uppercase text-[10px]">Search Member</label>
+                        <input 
+                            type="text" 
+                            name="q" 
+                            value="{{ search_query }}" 
+                            placeholder="Name, Member ID, phone..." 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition">
+                    </div>
+
+                    <!-- Month Filter -->
+                    <div>
+                        <label class="block mb-1 text-slate-500 font-bold uppercase text-[10px]">Filter by Month</label>
+                        <select name="month" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition">
+                            <option value="">All Months</option>
+                            {% for m_num, m_name in months_list %}
+                            <option value="{{ m_num }}" {% if month_filter == m_num %}selected{% endif %}>{{ m_name }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Year Filter -->
+                    <div>
+                        <label class="block mb-1 text-slate-500 font-bold uppercase text-[10px]">Filter by Year</label>
+                        <select name="year" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition">
+                            <option value="">All Years</option>
+                            {% for y in years_list %}
+                            <option value="{{ y }}" {% if year_filter == y %}selected{% endif %}>{{ y }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Specific Date Filter -->
+                    <div>
+                        <label class="block mb-1 text-slate-500 font-bold uppercase text-[10px]">Specific Date</label>
+                        <input 
+                            type="date" 
+                            name="date" 
+                            value="{{ date_filter }}" 
+                            class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition">
+                    </div>
+
+                    <!-- Service Session -->
+                    <div>
+                        <label class="block mb-1 text-slate-500 font-bold uppercase text-[10px]">Service Session</label>
+                        <select name="session" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition">
+                            <option value="">All Services</option>
+                            {% for s in sessions_list %}
+                            <option value="{{ s.id }}" {% if session_filter == s.id|stringformat:"s" %}selected{% endif %}>
+                                {{ s.title }} ({{ s.date|date:"M d" }})
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Department -->
+                    <div>
+                        <label class="block mb-1 text-slate-500 font-bold uppercase text-[10px]">Department</label>
+                        <select name="department" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition">
+                            <option value="">All Departments</option>
+                            {% for d in departments_list %}
+                            <option value="{{ d.id }}" {% if dept_filter == d.id|stringformat:"s" %}selected{% endif %}>
+                                {{ d.name }}
+                            </option>
+                            {% endfor %}
+                        </select>
+                    </div>
+
+                    <!-- Check-in Method -->
+                    <div>
+                        <label class="block mb-1 text-slate-500 font-bold uppercase text-[10px]">Check-In Method</label>
+                        <select name="method" class="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-600 transition">
+                            <option value="">All Methods</option>
+                            <option value="qr" {% if method_filter == 'qr' %}selected{% endif %}>Mobile QR Scan (GPS)</option>
+                            <option value="usher" {% if method_filter == 'usher' %}selected{% endif %}>Usher Desk Manual</option>
+                        </select>
+                    </div>
+
+                    <!-- Date Range: From & To -->
+                    <div>
+                        <label class="block mb-1 text-slate-500 font-bold uppercase text-[10px]">Date Range (From - To)</label>
+                        <div class="grid grid-cols-2 gap-2">
+                            <input 
+                                type="date" 
+                                name="date_from" 
+                                value="{{ date_from }}" 
+                                placeholder="From"
+                                class="w-full px-2.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100">
+                            <input 
+                                type="date" 
+                                name="date_to" 
+                                value="{{ date_to }}" 
+                                placeholder="To"
+                                class="w-full px-2.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-slate-900 text-xs focus:bg-white focus:outline-none focus:ring-2 focus:ring-blue-100">
+                        </div>
+                    </div>
+
+                </div>
+
+                <!-- Submit Filter Button -->
+                <div class="flex items-center justify-end gap-3 pt-2">
+                    <button 
+                        type="submit" 
+                        class="px-5 py-2.5 rounded-xl brand-blue text-white font-bold text-xs shadow-sm hover:opacity-95 transition cursor-pointer">
+                        Apply Filters
+                    </button>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Attendance Records Table -->
+        <div class="bg-white rounded-3xl border border-slate-200 shadow-sm overflow-hidden">
+            
+            <div class="p-5 sm:p-6 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                    <h2 class="text-base sm:text-lg font-bold text-slate-900">Attendance Records</h2>
+                    <p class="text-xs text-slate-500">Showing {{ records|length }} record{{ records|length|pluralize }}</p>
+                </div>
+
+                <div class="text-xs text-slate-400 font-medium">
+                    Auto-sorted by most recent service date &amp; check-in time
+                </div>
+            </div>
+
+            <div class="overflow-x-auto">
+                <table class="w-full text-left border-collapse">
+                    <thead>
+                        <tr class="bg-slate-50/80 border-b border-slate-200 text-xs font-bold uppercase tracking-wider text-slate-500">
+                            <th class="py-3.5 px-4 sm:px-6">Service Date</th>
+                            <th class="py-3.5 px-4">Member</th>
+                            <th class="py-3.5 px-4">Member ID</th>
+                            <th class="py-3.5 px-4">Department</th>
+                            <th class="py-3.5 px-4">Service Session</th>
+                            <th class="py-3.5 px-4">Time</th>
+                            <th class="py-3.5 px-4">Method</th>
+                            <th class="py-3.5 px-4 sm:px-6 text-right">Distance</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-slate-100 text-sm">
+                        {% for r in records %}
+                        <tr class="hover:bg-slate-50/60 transition group">
+                            
+                            <!-- Service Date -->
+                            <td class="py-4 px-4 sm:px-6 font-bold text-slate-900 whitespace-nowrap text-xs">
+                                {{ r.session.date|date:"M d, Y" }}
+                                <div class="text-[10px] text-slate-400 font-normal">{{ r.session.date|date:"l" }}</div>
+                            </td>
+
+                            <!-- Member Info -->
+                            <td class="py-4 px-4">
+                                <div class="font-bold text-slate-900">{{ r.member.name }}</div>
+                                <div class="text-xs text-slate-500">{{ r.member.phone_number }}</div>
+                            </td>
+
+                            <!-- Member ID -->
+                            <td class="py-4 px-4 whitespace-nowrap">
+                                <span class="px-2.5 py-1 rounded-lg text-xs font-mono font-bold bg-slate-100 text-slate-800 border border-slate-200">
+                                    {{ r.member.member_id }}
+                                </span>
+                            </td>
+
+                            <!-- Department -->
+                            <td class="py-4 px-4 whitespace-nowrap text-xs text-slate-600 font-medium">
+                                {% if r.member.department %}
+                                    <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-100 text-slate-700 text-xs">
+                                        <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                        {{ r.member.department.name }}
+                                    </span>
+                                {% else %}
+                                    <span class="text-slate-400">—</span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Service Session -->
+                            <td class="py-4 px-4 whitespace-nowrap text-xs font-semibold text-slate-800">
+                                {{ r.session.title }}
+                            </td>
+
+                            <!-- Check-In Time -->
+                            <td class="py-4 px-4 whitespace-nowrap text-xs text-slate-600 font-medium">
+                                {{ r.check_in_time|date:"h:i A" }}
+                            </td>
+
+                            <!-- Check-In Method -->
+                            <td class="py-4 px-4 whitespace-nowrap">
+                                {% if "Usher Desk" in r.device_info %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200/60">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-blue-600"></span>
+                                    Usher Desk
+                                </span>
+                                {% else %}
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold bg-emerald-50 text-emerald-700 border border-emerald-200/60">
+                                    <span class="w-1.5 h-1.5 rounded-full bg-emerald-600"></span>
+                                    Self QR (GPS)
+                                </span>
+                                {% endif %}
+                            </td>
+
+                            <!-- Distance -->
+                            <td class="py-4 px-4 sm:px-6 text-right whitespace-nowrap text-xs font-mono text-slate-500">
+                                {{ r.distance_meters|floatformat:1 }}m
+                            </td>
+                        </tr>
+                        {% empty %}
+                        <tr>
+                            <td colspan="8" class="py-14 px-4 text-center">
+                                <div class="max-w-sm mx-auto space-y-2">
+                                    <div class="w-12 h-12 rounded-full bg-slate-100 text-slate-400 flex items-center justify-center mx-auto">
+                                        <svg class="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                                        </svg>
+                                    </div>
+                                    <p class="font-bold text-slate-800 text-sm">No Attendance Records Found</p>
+                                    <p class="text-xs text-slate-500">Try adjusting your date, month, or search filters to find records.</p>
+                                    <a href="{% url 'attendance:attendance_dashboard' %}" class="inline-block mt-2 text-xs font-bold text-blue-600 hover:text-blue-800 transition">
+                                        Reset Filters
+                                    </a>
+                                </div>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+        </div>
+
+</div>
+{% endblock %}

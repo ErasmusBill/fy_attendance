@@ -1,0 +1,57 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Check-In Currently Closed | Church Attendance{% endblock %}
+
+{% block content %}
+<div class="min-h-screen bg-slate-50 flex flex-col justify-between py-12 px-4 sm:px-6">
+    <div class="max-w-md w-full mx-auto my-auto text-center bg-white p-8 sm:p-10 rounded-3xl border border-slate-200 shadow-xl">
+        
+        <!-- Church Logo Banner -->
+        <div class="w-20 h-20 rounded-3xl bg-white border border-slate-200 flex items-center justify-center mx-auto mb-6 p-2 shadow-md overflow-hidden">
+            <img src="{% static 'images/logo.jpg' %}" alt="Church Logo" class="w-full h-full object-contain">
+        </div>
+
+        <h1 class="text-2xl font-black text-slate-900 tracking-tight">Check-In Currently Inactive</h1>
+        <p class="text-sm text-slate-500 mt-2.5 leading-relaxed">
+            {{ reason }}
+        </p>
+
+        {% if church_location %}
+        <div class="mt-6 p-4 rounded-2xl bg-slate-50 border border-slate-200 text-xs text-slate-600 text-left space-y-1.5">
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400">Sanctuary:</span> 
+                <strong class="text-slate-900 font-semibold">{{ church_location.name }}</strong>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400">Current Time:</span> 
+                <strong class="text-slate-900 font-semibold">{% now "l, F d, Y — h:i A" %}</strong>
+            </div>
+            <div class="flex justify-between items-center">
+                <span class="text-slate-400">Status:</span> 
+                <span class="inline-flex items-center gap-1 text-amber-700 font-bold">
+                    <span class="w-2 h-2 rounded-full bg-amber-500 animate-pulse"></span>
+                    Between Services
+                </span>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="mt-8 pt-6 border-t border-slate-100 space-y-3">
+            <p class="text-xs text-slate-500 leading-normal">
+                Attending a service right now? Please notify an <strong>usher</strong> at the entrance desk to activate the session or record your attendance manually.
+            </p>
+            {% if request.user.is_authenticated %}
+            <div class="pt-2">
+                <a href="{% url 'attendance:usher_desk' %}" class="inline-flex items-center gap-2 px-4 py-2 rounded-xl brand-blue text-white text-xs font-semibold shadow-xs hover:opacity-95 transition">
+                    <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                    <span>Open Usher Desk</span>
+                </a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}
